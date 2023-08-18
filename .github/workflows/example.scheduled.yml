@@ -1,0 +1,20 @@
+name: Scheduled Example
+
+on:
+  schedule:
+    - cron: "0 2 1 * *"
+
+jobs:
+  run-scheduled-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: E2E tests
+        # uses: grafana/k6-github-action@v1
+        uses: ./
+        with:
+          include: tests/**/*.nightly-test.js
+          browser: true
+          args: -e BASE_URL=http://whatsmyuseragent.org

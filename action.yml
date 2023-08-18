@@ -1,0 +1,53 @@
+name: "K6"
+description: "Run K6 tests"
+branding:
+  icon: "crosshair"
+  color: "purple"
+inputs:
+  include:
+    description: "Pattern to match tests"
+    required: true
+    default: tests/**/*.test.js
+  params:
+    description: "Pass arguments to k6"
+  version:
+    description: "k6 version (https://github.com/grafana/k6)"
+    default: 0.46.0
+  browser:
+    description: "Whether to install with a browser"
+    default: "false"
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-go@v4
+      with:
+        go-version: "1.19"
+
+    - uses: actions/cache@v3
+      id: cache
+      with:
+        path: usr/bin/k6
+        key: ${{ runner.os }}-k6-${{ inputs.version }}
+
+    - name: Install k6
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ca-certificates gnupg2
+        sudo gpg -k
+        sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+        echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+        sudo apt-get update
+        sudo apt-get install k6=${{ inputs.version }}
+      shell: bash
+
+    - name: Install chromium
+      if: inputs.browser == 'true'
+      uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: chromium-browser
+        version: ${{ inputs.version }}
+
+    - name: Run k6
+      run: . ${{ github.action_path }}/script.sh -i ${{ inputs.include }} -p "${{ inputs.params }}"
+      shell: bash
