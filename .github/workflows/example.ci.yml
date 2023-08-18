@@ -1,0 +1,30 @@
+name: CI Example
+on: [push]
+
+jobs:
+  run-ci-tests:
+    runs-on: ubuntu-latest
+    name: Run K6 with browser
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Node
+        uses: actions/setup-node@v3
+        with:
+          cache: npm
+          cache-dependency-path: demo/package-lock.json
+
+      - name: Build Application
+        run: npm --prefix ./demo/ ci && npm --prefix ./demo/ run build
+
+      - name: Start Application
+        run: npm --prefix ./demo/ run serve &
+
+      - name: Run tests
+        # uses: grafana/k6-github-action@v1
+        uses: ./
+        with:
+          browser: true
+          include: tests/**/*.ci-test.js
+          params: -e BASE_URL=http://localhost:3000
